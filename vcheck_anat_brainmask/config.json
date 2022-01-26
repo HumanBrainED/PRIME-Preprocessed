@@ -84,7 +84,7 @@
     "navbarVariant": "info"
   },
   "home": {
-    "title": "PRIME QC",
+    "title": "PRIME-QC",
     "tagline": "QC: brain masks (anat)",
     "backgroundUrl": "https://github.com/HumanBrainED/PRIME-Preprocessed/raw/main/PRIME-DRE.png"
   },

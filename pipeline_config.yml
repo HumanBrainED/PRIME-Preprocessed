@@ -1,0 +1,252 @@
+%YAML beta
+---
+# PRIME-Preprocessed Project Pipeline yml 
+
+pipeline_basic:
+
+  # Name for this pipeline configuration - useful for identification.
+  pipeline_name: XXXX
+  reference: 
+  github: 
+  authors: ['XXXX', 'YYYY']
+  contact: XXXX@email 
+  softwares: ['ANTS', 'FSL', 'AFNI']
+
+  quality_control: 
+    # whether quality control is performed
+    visual_inspection: TRUE
+    quality_assessment_score: TRUE
+  minimal_preprocessed: 
+    # whether the minimal preprocessing is performed
+    anat: 
+      brain_extraction: TRUE
+      anatomical_registration: TRUE
+      segmentation: TRUE
+    func:
+      slice_timing: TRUE
+      brain_extraction: TRUE
+      motion_correction: TRUE
+      distortion_correction: FALSE
+      functional_registration: TRUE
+    dwi:
+      to-be-added:
+      
+  end-to-end_preprocessed:
+    # whether the end-to-end preprocessing is performed
+    anat:
+      T2wToT1w_registration: TRUE
+      surface_construction: TRUE
+    func:
+      ICA_denoising: FALSE
+      nuisance_regression: TRUE
+      bandpass_filtering: TRUE
+      smoothing: TRUE
+    dwi:
+      to-be-added:
+
+
+# PREPROCESSING
+anatomical_preproc:
+  # denoise the anatomical image
+  denoise:
+    using: ['ANTS']
+    command: ['DenoiseImage']
+      # Specific options for this command
+      # noise model: 'Gaussian' or 'Rician'
+      noise_model: 'Gaussian'
+
+  # bias field correction
+  bias_field_correction:
+    using: ['ANTS']
+    command: ['N4BiasFieldCorrection']
+      # An integer to resample the input image to save computation time. Shrink factors <= 4 are commonly used.
+      shrink_factor: 2
+
+  # ACPC alignment
+  acpc_alignment:
+    using: ['FSL']
+    command: ['flirt']
+    # ACPC size of brain in z-dimension in mm.
+    brain_size: 70
+
+    # ACPC Target
+    # options: 'brain' or 'whole-head'
+    acpc_target: 'whole-head'
+
+    # ACPC aligned template
+    T1w_ACPC_template: MacaqueYerkes19_T1_1mm.nii.gz
+    T1w_brain_ACPC_template: None
+
+  # Brain extraction
+  brain_extraction:
+    AFNI-3dSkullStrip:
+      using: ['AFNI']
+      command: ['3dSkullStrip']
+        # option parameters
+        # Set it as True if processing monkey data with AFNI
+        monkey: True
+
+    UNet:
+      using: ['UNet']
+      command: ['muSkullStrip.py']
+        # UNet model
+        unet_model : /model-path/Site-All-T-epoch_36.model
+ 
+    Template_Based:
+      using: ['FSL', 'ANTS']
+      command: ['flirt', 'antsRegistration']
+        # option parameters:
+        # whole-head
+        template_path : /template_path/T1w.nii.gz
+        # brain-mask
+        mask_path : /template_path/T1w_brain_mask.nii.gz
+
+# Surface construction
+surface_analysis:
+  # Whether perform surface-based analysis
+  run: Off
+    freesurfer:
+      run: On
+    CIVET:
+      run: Off
+
+# Tissue segmentation
+tissue_segmentation:
+  # segment anatomical images into white matter, gray matter, CSF
+  FSL-FAST:
+    command: ['FAST']
+      # option parameters
+      thresholding:
+        CSF_threshold_value : 0.95
+        WM_threshold_value : 0.95
+        GM_threshold_value : 0.95
+
+  Template_Based:
+    command: ['antsRegistration']
+      Template: /path/to/the/template/T1w.nii.gz
+      WHITE: /path/to/the/template/white_bin.nii.gz
+      GRAY: /path/to/the/template/gray_bin.nii.gz
+      CSF: /path/to/the/template/csf_bin.nii.gz
+
+  FreeSurfer:
+    # --erode option to erode segmentation masks
+    erode: 0
+    # Label values corresponding to CSF in FreeSurfer aseg segmentation file
+    CSF_label : [24]
+    # Label values corresponding to Gray Matter in FreeSurfer aseg segmentation file
+    GM_label : [3, 42]
+    # Label values corresponding to White Matter in FreeSurfer aseg segmentation file
+    WM_label : [2, 41]
+
+# Anatomical registration: anat -> template
+anatomical_registration:
+  
+  # template
+  resolution_for_anat: 2mm
+  T1w_brain_template: /path/to/the/template_${resolution_for_anat}_brain.nii.gz
+  T1w_template: /path/to/the/template_${resolution_for_anat}.nii.gz
+  T1w_brain_template_mask: /path/to/the/template_${resolution_for_anat}_brain_mask.nii.gz
+  
+  # example (using FSL-FNIRT)
+  FSL-FNIRT:
+    # Configuration file to be used by FSL to set FNIRT parameters.
+    fnirt_config: /path/to/the/config/file
+    interpolation: spline
+
+  # example (using ANTs)
+  ANTs:
+    # ANTs parameters for T1-template-based registration
+    T1_registration:
+      - transforms:
+         - Rigid:
+             gradientStep : 0.1
+             metric :
+               type : MI
+         - Affine:
+             gradientStep : 0.1
+             metric :
+               type : MI
+         - SyN:
+             gradientStep : 0.1
+             metric:
+               type : CC
+      # Possible values: Linear, BSpline, LanczosWindowedSinc
+      interpolation: LanczosWindowedSinc
+
+# Functional registration: func -> anat
+functional_registration:
+
+  coregistration:
+    # func reference used for func->anat registration, e.g. Mean_functional, functional_0 (the first volume)
+    func_reference: ['Mean_Functional']
+
+    # method for example, flirt, flirt -cost bbr, freesurfer-bbregist
+    method: ['FLIRT']
+    boundary_based_registration: True
+
+# Functional preprocesssing (truncatoin, despiking, slicing timing, motion correction, distortion correction)
+functional_preproc:
+  truncation:
+    # First timepoint to include in analysis.
+    # Default is 0 (beginning of timeseries).
+    start_tr: 0
+
+  despiking:
+    using: ['AFNI']
+    command: ['3dDespike']
+
+  slice_timing_correction:
+    using: ['AFNI']
+    command: ['3dTshift']
+
+  motion_correction:
+      # using: ['3dvolreg', 'mcflirt']
+      using: ['AFNI']
+      command: ['3dvolreg']
+        reference: ['Mean_functional']
+
+  distortion_correction:
+    FUGUE:
+      phase_image:
+      magnitude_image:
+    TOPUP:
+      PhaseDiff:
+      Blip:
+
+# Extract functional brain mask
+func_masking:
+  # using: ['AFNI', 'FSL', 'FSL_AFNI', 'Anatomical_Refined', 'Anatomical_Based']
+  method: ['Anatomical_Refined']
+    registration: 'FLIRT'
+    anatomical_reference_head: 'head.nii.gz'
+    anatomical_reference_brain: 'brain.nii.gz'
+    anatomical_reference_mask: 'mask.nii.gz'
+
+# Nuisance regression (+bandpass filtering)
+nuisance_corrections:
+  Regressors: 
+    # AFNI, FSL, freesurfer, or perform regression in python
+    using: ['Python']
+    command: ['']
+    # bandpass filtering
+    Bandpass:
+            bottom_frequency: 0.01
+            top_frequency: 0.1
+    # 6, 12, 24, or 36 motion parameters
+    motion: 6
+    csf: 'mean'
+    wm: 'mean'
+    global: 'mean'
+
+# Smoothing 
+spatial_smoothing:
+  # e.g FSL MultiImageMaths AFNI 3dBlurToFWHM 
+  smoothing_method: ['FSL']
+  # Full Width at Half Maximum of the Gaussian kernel used during spatial smoothing.
+  fwhm: [3]
+
+# z-scoreing the final preprocessed data
+z-scoring:
+  # z-score the data
+  output: ['z-scored']
+

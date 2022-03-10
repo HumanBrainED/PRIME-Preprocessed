@@ -20,7 +20,8 @@ Datasets:
     - UC-Davis (N=19)
     - University of Western Ontario (N=12, MP2RAGE)
 
-Example data: 2 subjects for each of 5 core sites above
+Example data: 2 subjects for each of 5 core sites above: aws s3://fcp-indi/data/Projects/INDI/PRIME/ExampleData.tar.gz
+
 Brain masks for example data: [link](https://github.com/HumanBrainED/PRIME-Preprocessed/blob/main/ExampleData/ExampleData_Masks.tar.gz)
 
 Pipeline configuration example: https://github.com/HumanBrainED/PRIME-Preprocessed/blob/main/pipeline_config.yml

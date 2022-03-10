@@ -1,6 +1,6 @@
 # PRIME-Preprocessed
 ongoing project: preprocess PRIME-DE data
-
+----
 Goal: 
 - 1. Quality assessment
 - 2. Minimal preprocess
@@ -23,12 +23,13 @@ Datasets:
 Example data: 2 subjects for each of 5 core sites above
 Brain masks for example data: [link](https://github.com/HumanBrainED/PRIME-Preprocessed/blob/main/ExampleData/ExampleData_Masks.tar.gz)
 
+Pipeline configuration example: https://github.com/HumanBrainED/PRIME-Preprocessed/blob/main/pipeline_config.yml
 
 ----
 ## Anatomical brain mask (pre-release, all T1w masks)
 https://github.com/HumanBrainED/PRIME-Preprocessed/releases
 
-## v0.1_anat_brainmask: brain masks for T1w images from PRIME-DE
+### v0.1_anat_brainmask: brain masks for T1w images from PRIME-DE
 Masks are generated using the U-Net model (https://github.com/HumanBrainED/NHP-BrainExtraction)
 
 - Masks for all sites except site-uwmadison are created based on [brainmask_T1w_136macaques.tar](https://github.com/HumanBrainED/NHP-BrainExtraction/blob/master/PRIME-DE_BrainMask/brainmasks/brainmask_T1w_136macaques.tar) (Ref: Reference: [Wang et al.,2021](https://www.sciencedirect.com/science/article/pii/S1053811921002780))
